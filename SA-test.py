@@ -1,21 +1,21 @@
-
 import tsplib95
 import random
-import math
 import numpy as np
 import time 
+from utils import tour_length
 
-problem = tsplib95.load('data/berlin52.tsp')
 
-nodes = list(problem.get_nodes())
-n = problem.dimension
+berlin52 = tsplib95.load('data/berlin52.tsp')
+
+nodes = list(berlin52.get_nodes())
+n = berlin52.dimension
 
 # Distance matrix
 
 D = np.zeros((n, n))
 for i, ni in enumerate(nodes):
     for j, nj in enumerate(nodes):
-        D[i, j] = problem.get_weight(ni, nj)
+        D[i, j] = berlin52.get_weight(ni, nj)
 
 # Util: Tour length
 def tour_length(tour, D):
@@ -60,7 +60,7 @@ def simulated_annealing(
 
         delta = candidate_cost - current_cost
 
-        if delta < 0 or random.random() < math.exp(-delta / T):
+        if delta < 0 or random.random() < np.exp(-delta / T):
             current = candidate
             current_cost = candidate_cost
 
@@ -80,5 +80,6 @@ def simulated_annealing(
 start = time.time()
 best_tour, best_cost = simulated_annealing(D)
 elapsed = time.time() - start
+print("Size:", n)
 print("Best tour length:", best_cost)
 print("Elapsed time (s):", elapsed)

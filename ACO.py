@@ -1,101 +1,68 @@
-from utils import tour_length
-import tsplib95
-import random
 import numpy as np
-import time
+import random
 
-berlin52 = tsplib95.load('data/berlin52.tsp')
-nodes = list(berlin52.get_nodes())
-n = berlin52.dimension
+def ant_colony(G: dict[str,dict[str,float]] , ants=50, epochs=200, alpha=1.0, beta=5.0, rho=0.1, q=100):
+    nodes = list( G.keys())
+    n = len(nodes)
+    distance = np.zeros((n, n))
+    for i, u in enumerate(nodes):
+        for j, v in enumerate(nodes):
+            if u != v:
+                distance[i][j] = G[u][v]
+            else:
+                distance[i][j] = np.inf
 
-# Distance matrix
-D = np.zeros((n, n))
-for i, ni in enumerate(nodes):
-    for j, nj in enumerate(nodes):
-        D[i, j] = berlin52.get_weight(ni, nj)
+    def get_length(tour: list) -> float:
+        return sum(distance[tour[i]][tour[(i + 1) % n]] for i in range(n))
 
-# Initialization
-def init_pheromone(n, tau0 = 1.0):
-    return np.full((n, n), tau0)
+    # Initial pheromone levels 
+    pheromone = np.ones((n, n))  
 
-# Construct a tour
-def construct_tour(D, pheromone, alpha, beta):
-    n = len(D)
-    start = random.randrange(n)
-    tour = [start]
-    unvisited = set(range(n))
-    unvisited.remove(start)
+    best_tour = None
+    best_length = float('inf')
 
-    while unvisited:
-        i = tour[-1]
-        probs = []
-
-        for j in unvisited:
-            tau = pheromone[i, j] ** alpha
-            eta = (1.0 / D[i, j]) ** beta
-            probs.append((j, tau * eta))
-        
-        total = sum(p for _, p in probs)
-        r = random.random() * total
-        acc = 0.0
-
-        for j, p in probs:
-            acc += p
-            if acc >= r:
-                tour.append(j)
-                unvisited.remove(j)
-                break
-    return tour
-
-# Update pheromone
-def update_pheromone(pheromone, ants_tours, ants_costs, rho):
-    pheromone *= (1 - rho)
-
-    for tour, cost in zip(ants_tours, ants_costs):
-        for i in range(len(tour)):
-            a = tour[i]
-            b = tour[(i + 1) % len(tour)]
-            pheromone[a, b] += 1.0 / cost
-            pheromone[b, a] += 1.0 / cost
-
-# Ant Colony Optimization
-def ant_colony_optimization(
-        D,
-        ants=20,
-        iterations=100,
-        alpha=1.0,
-        beta=2.0,
-        rho=0.1,
-    ):
-    n = len(D)
-    pheromone = init_pheromone(n)
-
-    best = None
-    best_cost = float('inf')
-
-    for _ in range(iterations):
-        tours = []
-        costs = []
-
+    for _ in range(epochs):
+        all_tours = []
+        all_lengths = []
         for _ in range(ants):
-            tour = construct_tour(D, pheromone, alpha, beta)
-            cost = tour_length(tour, D)
+            tour = []
+            unvisited = set(range(n))
+            current = random.choice(range(n))
+            tour.append(current)
+            unvisited.remove(current)
 
-            tours.append(tour)
-            costs.append(cost)
+            # Generate a tour based on pheromone trail
+            while unvisited:
+                probabilities = []
+                denom = sum((pheromone[current][j] ** alpha) * ((1 / distance[current][j]) ** beta) for j in unvisited)
+                for j in unvisited:
+                    p = (pheromone[current][j] ** alpha) * ((1 / distance[current][j]) ** beta) / denom
+                    probabilities.append((j, p))
+                next_city = random.choices([j for j, _ in probabilities], [p for _, p in probabilities])[0]
+                tour.append(next_city)
+                unvisited.remove(next_city)
+                current = next_city
+            
+            tour_length = get_length(tour)
+            all_tours.append(tour)
+            all_lengths.append(tour_length)
 
-            if cost < best_cost:
-                best = tour[:]
-                best_cost = cost
-        
-        update_pheromone(pheromone, tours, costs, rho)
+            if tour_length < best_length:
+                best_length = tour_length
+                best_tour = tour
 
-    return best, best_cost
+        # Evaporation of pheromones
+        pheromone *= (1 - rho)
 
-# Run single experiment
-start_time = time.time()
-# Berlin52 solution: 7542
-best_tour, best_cost = ant_colony_optimization(D)
-end_time = time.time()
-print(f"Best cost: {best_cost}")
-print(f"Time taken: {end_time - start_time} seconds")
+        # Deposit pheromones
+        for tour, length in zip(all_tours, all_lengths):
+            for i in range(n):
+                u, v = tour[i], tour[(i + 1) % n]
+                pheromone[u][v] += q / length
+                pheromone[v][u] += q / length  
+
+    best_path = tuple([nodes[i] for i in best_tour])
+    return best_path, best_length
+
+
+

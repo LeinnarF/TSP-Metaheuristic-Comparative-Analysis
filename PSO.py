@@ -1,8 +1,8 @@
 import random
 
 def hybrid_pso_tsp(G,
-                   num_particles=120,
-                   iterations=600,
+                   num_particles=30,
+                   iterations=1000,
                    w=0.7, c1=1.4, c2=1.4,
                    vmax=80,
                    local_search_iters=40):

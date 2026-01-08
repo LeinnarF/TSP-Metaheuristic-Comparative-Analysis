@@ -40,6 +40,14 @@ Place them in your project directory, e.g.:
 project/
  ├── data/
  │   └── berlin52.tsp
+ ├── algorithms/
+ │   ├── ga.py
+ │   ├── sa.py
+ │   ├── aco.py
+ │   ├── pso.py
+ │   ├── eho.py
+ │   ├── gwo.py
+ │   └── pko.py
  └── main.py
 ```
 

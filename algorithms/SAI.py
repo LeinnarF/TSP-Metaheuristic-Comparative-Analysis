@@ -7,19 +7,17 @@ from functools import cache
 def tour_cost(graph, path):
     total = 0
     return sum(graph[path[i]][path[(i + 1) % len(path)]] for i in range(len(path)))
-    for a, b in zip(path, path[1:] + [path[0]]):
-        if b not in graph[a]:
-            return float('inf')
-        total += graph[a][b]
-    return total
  
  
-def simulated_annealing_improved(graph, T_start=1000, T_end=1, cooling_rate=0.999, iter_per_temp=100):
+def simulated_annealing_improved(graph, T_start=1000, T_end=1, cooling_rate=0.999):
     def get_cost(u, v):
         return graph[u][v] if v in graph[u] else math.inf
 
     nodes = list(graph.keys())
     n = len(nodes)
+
+    iter_per_temp = int(n * 1.5)
+
     current_tour = nodes[:]
     random.shuffle(current_tour)
     current_cost = tour_cost(graph, current_tour)

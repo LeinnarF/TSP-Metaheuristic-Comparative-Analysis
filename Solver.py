@@ -92,7 +92,7 @@ class Solver:
             data['SA'].append([output,end - start])
 
             start = time.perf_counter()
-            output = simulated_annealing_improved(self.graph, iter_per_temp=100)[0]
+            output = simulated_annealing_improved(self.graph)[0]
             end = time.perf_counter()
             data['SAI'].append([output,end - start])
 
